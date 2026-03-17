@@ -1,0 +1,206 @@
+-- Sapphire Universal GUI - Complete Script
+-- Compatible with all executors
+-- Made by Venice
+-- Version: 2.0
+
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Camera = game.Workspace.CurrentCamera
+local TextService = game:GetService("TextService")
+
+-- Player Variables
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+-- Settings
+local settings = {
+    aimbot = {
+        enabled = false,
+        keybind = Enum.KeyCode.Q,
+        smoothness = 0.15,
+        fov = 50,
+        aimPart = "Head",
+        teamCheck = false,
+        visibleCheck = true
+    },
+    esp = {
+        enabled = false,
+        showNames = true,
+        showHealth = true,
+        showDistance = true,
+        showBoxes = true,
+        boxColor = Color3.new(1, 0, 0),
+        nameColor = Color3.new(1, 1, 1),
+        healthColor = Color3.new(0, 1, 0),
+        distanceColor = Color3.new(1, 1, 0)
+    },
+    misc = {
+        noClip = false,
+        infiniteJump = false,
+        speedBoost = false,
+        speedValue = 25,
+        jumpPower = 50
+    }
+}
+
+-- Create GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SapphireUniversal"
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn = false
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+MainFrame.Size = UDim2.new(0, 500, 0, 400)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+-- Title Bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Parent = MainFrame
+TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+TitleBar.BorderSizePixel = 0
+TitleBar.Size = UDim2.new(1, 0, 0, 35)
+
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Parent = TitleBar
+Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.Size = UDim2.new(1, -20, 1, 0)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "Sapphire Universal - Roblox Exploit"
+Title.TextColor3 = Color3.fromRGB(150, 150, 255)
+Title.TextSize = 16
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Close Button
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Parent = TitleBar
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+CloseButton.BorderSizePixel = 0
+CloseButton.Position = UDim2.new(1, -30, 0, 5)
+CloseButton.Size = UDim2.new(0, 25, 0, 25)
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 14
+
+-- Minimize Button
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Parent = TitleBar
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 150, 50)
+MinimizeButton.BorderSizePixel = 0
+MinimizeButton.Position = UDim2.new(1, -60, 0, 5)
+MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
+MinimizeButton.Font = Enum.Font.SourceSansBold
+MinimizeButton.Text = "-"
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.TextSize = 14
+
+-- Tab Frame
+local TabFrame = Instance.new("Frame")
+TabFrame.Name = "TabFrame"
+TabFrame.Parent = MainFrame
+TabFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+TabFrame.BorderSizePixel = 0
+TabFrame.Position = UDim2.new(0, 0, 0, 35)
+TabFrame.Size = UDim2.new(0, 120, 1, -35)
+
+-- Content Frame
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Parent = MainFrame
+ContentFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+ContentFrame.BorderSizePixel = 0
+ContentFrame.Position = UDim2.new(0, 120, 0, 35)
+ContentFrame.Size = UDim2.new(1, -120, 1, -35)
+
+-- Create Tab Function
+local function createTab(name)
+    local TabButton = Instance.new("TextButton")
+    TabButton.Name = name .. "Tab"
+    TabButton.Parent = TabFrame
+    TabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    TabButton.BorderSizePixel = 0
+    TabButton.Size = UDim2.new(1, 0, 0, 30)
+    TabButton.Font = Enum.Font.SourceSans
+    TabButton.Text = name
+    TabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+    TabButton.TextSize = 14
+    
+    local TabContent = Instance.new("ScrollingFrame")
+    TabContent.Name = name .. "Content"
+    TabContent.Parent = ContentFrame
+    TabContent.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+    TabContent.BorderSizePixel = 0
+    TabContent.Position = UDim2.new(0, 0, 0, 0)
+    TabContent.Size = UDim2.new(1, 0, 1, 0)
+    TabContent.ScrollBarThickness = 8
+    TabContent.Visible = false
+    TabContent.BackgroundTransparency = 1
+    
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Parent = TabContent
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 5)
+    
+    return TabButton, TabContent
+end
+
+-- Create Toggle Function
+local function createToggle(name, parent, default, callback)
+    local ToggleFrame = Instance.new("Frame")
+    ToggleFrame.Name = name .. "Toggle"
+    ToggleFrame.Parent = parent
+    ToggleFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    ToggleFrame.BorderSizePixel = 0
+    ToggleFrame.Size = UDim2.new(1, -10, 0, 30)
+    ToggleFrame.Position = UDim2.new(0, 5, 0, 0)
+    
+    local ToggleLabel = Instance.new("TextLabel")
+    ToggleLabel.Name = "ToggleLabel"
+    ToggleLabel.Parent = ToggleFrame
+    ToggleLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleLabel.BackgroundTransparency = 1
+    ToggleLabel.Position = UDim2.new(0, 10, 0, 0)
+    ToggleLabel.Size = UDim2.new(1, -60, 1, 0)
+    ToggleLabel.Font = Enum.Font.SourceSans
+    ToggleLabel.Text = name
+    ToggleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    ToggleLabel.TextSize = 14
+    ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Name = "ToggleButton"
+    ToggleButton.Parent = ToggleFrame
+    ToggleButton.BackgroundColor3 = default and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 50, 50)
+    ToggleButton.BorderSizePixel = 0
+    ToggleButton.Position = UDim2.new(1, -50, 0, 5)
+    ToggleButton.Size = UDim2.new(0, 40, 0, 20)
+    ToggleButton.Font = Enum.Font.SourceSansBold
+    ToggleButton.Text = default and "ON" or "OFF"
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.TextSize = 12
+    
+    local enabled = default
+    
+    ToggleButton.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        ToggleButton.BackgroundColor3 = enabled and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 50, 50)
+        ToggleButton.Text = enabled and "ON" or "OFF"
+        if callback then
+            callback

@@ -1,4 +1,4 @@
--- Sapphire Universal GUI - Complete Script
+-- Sapphire Universal GUI - Complete Working Script
 -- Compatible with all executors
 -- Made by Venice
 -- Version: 2.0
@@ -14,6 +14,9 @@ local TextService = game:GetService("TextService")
 -- Player Variables
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
+
+-- ESP Objects Storage
+local espObjects = {}
 
 -- Settings
 local settings = {
@@ -46,6 +49,219 @@ local settings = {
     }
 }
 
+-- Function to check if player is valid target
+local function isValidTarget(player)
+    if not player or not player.Character or not player.Character:FindFirstChild(settings.aimbot.aimPart) then
+        return false
+    end
+    
+    if player == LocalPlayer then
+        return false
+    end
+    
+    if settings.aimbot.teamCheck and player.Team == LocalPlayer.Team then
+        return false
+    end
+    
+    if settings.aimbot.visibleCheck then
+        local targetPart = player.Character[settings.aimbot.aimPart]
+        local origin = Camera.CFrame.Position
+        local direction = (targetPart.Position - origin).unit
+        local ray = Ray.new(origin, direction * 1000)
+        local hit = game.Workspace:FindPartOnRay(ray, LocalPlayer.Character)
+        
+        if hit and hit:IsDescendantOf(player.Character) then
+            return true
+        else
+            return false
+        end
+    end
+    
+    return true
+end
+
+-- Function to get closest player to crosshair
+local function getClosestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = settings.aimbot.fov
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if isValidTarget(player) then
+            local targetPart = player.Character[settings.aimbot.aimPart]
+            local screenPos, onScreen = Camera:WorldToScreenPoint(targetPart.Position)
+            
+            if onScreen then
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Mouse.X, Mouse.Y)).magnitude
+                
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestPlayer = player
+                end
+            end
+        end
+    end
+    
+    return closestPlayer
+end
+
+-- Aimbot function
+local function aimAt(target)
+    if not target or not target.Character or not target.Character:FindFirstChild(settings.aimbot.aimPart) then
+        return
+    end
+    
+    local targetPart = target.Character[settings.aimbot.aimPart]
+    local targetPosition = targetPart.Position
+    
+    local currentCFrame = Camera.CFrame
+    local targetCFrame = CFrame.new(currentCFrame.Position, targetPosition)
+    
+    Camera.CFrame = currentCFrame:lerp(targetCFrame, settings.aimbot.smoothness)
+end
+
+-- ESP Drawing functions
+local function createESP(player)
+    if espObjects[player] then
+        return
+    end
+    
+    local character = player.Character
+    if not character then
+        return
+    end
+    
+    local esp = {}
+    
+    -- Box
+    if settings.esp.showBoxes then
+        esp.box = Drawing.new("Square")
+        esp.box.Color = settings.esp.boxColor
+        esp.box.Thickness = 2
+        esp.box.Transparency = 1
+        esp.box.Visible = false
+    end
+    
+    -- Name
+    if settings.esp.showNames then
+        esp.name = Drawing.new("Text")
+        esp.name.Color = settings.esp.nameColor
+        esp.name.Size = 14
+        esp.name.Center = true
+        esp.name.Outline = true
+        esp.name.Visible = false
+    end
+    
+    -- Health
+    if settings.esp.showHealth then
+        esp.health = Drawing.new("Text")
+        esp.health.Color = settings.esp.healthColor
+        esp.health.Size = 12
+        esp.health.Center = true
+        esp.health.Outline = true
+        esp.health.Visible = false
+    end
+    
+    -- Distance
+    if settings.esp.showDistance then
+        esp.distance = Drawing.new("Text")
+        esp.distance.Color = settings.esp.distanceColor
+        esp.distance.Size = 12
+        esp.distance.Center = true
+        esp.distance.Outline = true
+        esp.distance.Visible = false
+    end
+    
+    espObjects[player] = esp
+end
+
+local function updateESP(player)
+    if not settings.esp.enabled then
+        if espObjects[player] then
+            for _, obj in pairs(espObjects[player]) do
+                if obj and obj.Remove then
+                    obj:Remove()
+                end
+            end
+            espObjects[player] = nil
+        end
+        return
+    end
+    
+    if not espObjects[player] then
+        createESP(player)
+    end
+    
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then
+        return
+    end
+    
+    local esp = espObjects[player]
+    if not esp then
+        return
+    end
+    
+    local rootPart = character.HumanoidRootPart
+    local screenPos, onScreen = Camera:WorldToScreenPoint(rootPart.Position)
+    
+    if onScreen then
+        -- Update box
+        if esp.box and settings.esp.showBoxes then
+            local size = (Camera:WorldToScreenPoint(rootPart.Position - Vector3.new(0, 3, 0)).Y - 
+                         Camera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, 3, 0)).Y)
+            
+            esp.box.Size = Vector2.new(size * 1.5, size * 2)
+            esp.box.Position = Vector2.new(screenPos.X - size * 0.75, screenPos.Y - size)
+            esp.box.Visible = true
+        end
+        
+        -- Update name
+        if esp.name and settings.esp.showNames then
+            esp.name.Text = player.Name
+            esp.name.Position = Vector2.new(screenPos.X, screenPos.Y - 100)
+            esp.name.Visible = true
+        end
+        
+        -- Update health
+        if esp.health and settings.esp.showHealth then
+            esp.health.Text = "HP: " .. math.floor(humanoid.Health)
+            esp.health.Position = Vector2.new(screenPos.X, screenPos.Y - 85)
+            esp.health.Visible = true
+        end
+        
+        -- Update distance
+        if esp.distance and settings.esp.showDistance then
+            local distance = (LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).magnitude
+            esp.distance.Text = math.floor(distance) .. "m"
+            esp.distance.Position = Vector2.new(screenPos.X, screenPos.Y - 70)
+            esp.distance.Visible = true
+        end
+    else
+        -- Hide ESP elements if not on screen
+        for _, obj in pairs(esp) do
+            if obj and obj.Visible ~= nil then
+                obj.Visible = false
+            end
+        end
+    end
+end
+
+local function cleanupESP(player)
+    if espObjects[player] then
+        for _, obj in pairs(espObjects[player]) do
+            if obj and obj.Remove then
+                obj:Remove()
+            end
+        end
+        espObjects[player] = nil
+    end
+end
+
 -- Create GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "SapphireUniversal"
@@ -73,134 +289,4 @@ TitleBar.BorderSizePixel = 0
 TitleBar.Size = UDim2.new(1, 0, 0, 35)
 
 local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Parent = TitleBar
-Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0, 10, 0, 0)
-Title.Size = UDim2.new(1, -20, 1, 0)
-Title.Font = Enum.Font.SourceSansBold
-Title.Text = "Sapphire Universal - Roblox Exploit"
-Title.TextColor3 = Color3.fromRGB(150, 150, 255)
-Title.TextSize = 16
-Title.TextXAlignment = Enum.TextXAlignment.Left
-
--- Close Button
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Parent = TitleBar
-CloseButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-CloseButton.BorderSizePixel = 0
-CloseButton.Position = UDim2.new(1, -30, 0, 5)
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
-CloseButton.Font = Enum.Font.SourceSansBold
-CloseButton.Text = "X"
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.TextSize = 14
-
--- Minimize Button
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Parent = TitleBar
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 150, 50)
-MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Position = UDim2.new(1, -60, 0, 5)
-MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Font = Enum.Font.SourceSansBold
-MinimizeButton.Text = "-"
-MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.TextSize = 14
-
--- Tab Frame
-local TabFrame = Instance.new("Frame")
-TabFrame.Name = "TabFrame"
-TabFrame.Parent = MainFrame
-TabFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-TabFrame.BorderSizePixel = 0
-TabFrame.Position = UDim2.new(0, 0, 0, 35)
-TabFrame.Size = UDim2.new(0, 120, 1, -35)
-
--- Content Frame
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Parent = MainFrame
-ContentFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
-ContentFrame.BorderSizePixel = 0
-ContentFrame.Position = UDim2.new(0, 120, 0, 35)
-ContentFrame.Size = UDim2.new(1, -120, 1, -35)
-
--- Create Tab Function
-local function createTab(name)
-    local TabButton = Instance.new("TextButton")
-    TabButton.Name = name .. "Tab"
-    TabButton.Parent = TabFrame
-    TabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-    TabButton.BorderSizePixel = 0
-    TabButton.Size = UDim2.new(1, 0, 0, 30)
-    TabButton.Font = Enum.Font.SourceSans
-    TabButton.Text = name
-    TabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-    TabButton.TextSize = 14
-    
-    local TabContent = Instance.new("ScrollingFrame")
-    TabContent.Name = name .. "Content"
-    TabContent.Parent = ContentFrame
-    TabContent.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
-    TabContent.BorderSizePixel = 0
-    TabContent.Position = UDim2.new(0, 0, 0, 0)
-    TabContent.Size = UDim2.new(1, 0, 1, 0)
-    TabContent.ScrollBarThickness = 8
-    TabContent.Visible = false
-    TabContent.BackgroundTransparency = 1
-    
-    local UIListLayout = Instance.new("UIListLayout")
-    UIListLayout.Parent = TabContent
-    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    UIListLayout.Padding = UDim.new(0, 5)
-    
-    return TabButton, TabContent
-end
-
--- Create Toggle Function
-local function createToggle(name, parent, default, callback)
-    local ToggleFrame = Instance.new("Frame")
-    ToggleFrame.Name = name .. "Toggle"
-    ToggleFrame.Parent = parent
-    ToggleFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-    ToggleFrame.BorderSizePixel = 0
-    ToggleFrame.Size = UDim2.new(1, -10, 0, 30)
-    ToggleFrame.Position = UDim2.new(0, 5, 0, 0)
-    
-    local ToggleLabel = Instance.new("TextLabel")
-    ToggleLabel.Name = "ToggleLabel"
-    ToggleLabel.Parent = ToggleFrame
-    ToggleLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleLabel.BackgroundTransparency = 1
-    ToggleLabel.Position = UDim2.new(0, 10, 0, 0)
-    ToggleLabel.Size = UDim2.new(1, -60, 1, 0)
-    ToggleLabel.Font = Enum.Font.SourceSans
-    ToggleLabel.Text = name
-    ToggleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    ToggleLabel.TextSize = 14
-    ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local ToggleButton = Instance.new("TextButton")
-    ToggleButton.Name = "ToggleButton"
-    ToggleButton.Parent = ToggleFrame
-    ToggleButton.BackgroundColor3 = default and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 50, 50)
-    ToggleButton.BorderSizePixel = 0
-    ToggleButton.Position = UDim2.new(1, -50, 0, 5)
-    ToggleButton.Size = UDim2.new(0, 40, 0, 20)
-    ToggleButton.Font = Enum.Font.SourceSansBold
-    ToggleButton.Text = default and "ON" or "OFF"
-    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleButton.TextSize = 12
-    
-    local enabled = default
-    
-    ToggleButton.MouseButton1Click:Connect(function()
-        enabled = not enabled
-        ToggleButton.BackgroundColor3 = enabled and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 50, 50)
-        ToggleButton.Text = enabled and "ON" or "OFF"
-        if callback then
-            callback
+Title
